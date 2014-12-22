@@ -2,7 +2,7 @@ import math, os, sys, time
 
 from dtest import Tester, debug
 from pyassertions import assert_invalid, assert_one, assert_all, assert_none
-from pytools import since, rows_to_list
+from pytools import rows_to_list
 
 
 class TestUserFunctions(Tester):
@@ -19,7 +19,6 @@ class TestUserFunctions(Tester):
             self.create_ks(cursor, 'ks', rf)
         return cursor
 
-    @since('3.0')
     def test_migration(self):
         """ Test migration of user functions """
         cluster = self.cluster
@@ -81,7 +80,6 @@ class TestUserFunctions(Tester):
         #try creating function returning the wrong type, should error
         assert_invalid(cursor1, "CREATE FUNCTION bad_sin ( input double ) RETURNS double LANGUAGE java AS 'return Math.sin(input.doubleValue());'", "Could not compile function 'ks.bad_sin' from Java source:")
 
-    @since('3.0')
     def udf_overload_test(self):
 
         session = self.prepare(nodes=3)

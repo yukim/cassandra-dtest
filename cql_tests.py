@@ -7,7 +7,7 @@ from uuid import uuid4, UUID
 
 from dtest import Tester, canReuseCluster, freshCluster
 from pyassertions import assert_invalid, assert_one, assert_none, assert_all
-from pytools import since, require, rows_to_list
+from pytools import require, rows_to_list
 from cassandra import ConsistencyLevel, InvalidRequest
 from cassandra.protocol import ProtocolException, SyntaxException, ConfigurationException
 from cassandra.query import SimpleStatement
@@ -2566,11 +2566,9 @@ class TestCQL(Tester):
 
         assert_invalid(cursor, "SELECT * FROM foo WHERE a=1")
 
-    @since('3.0')
     def multi_in_test(self):
         self.__multi_in(False)
 
-    @since('3.0')
     def multi_in_compact_test(self):
         self.__multi_in(True)
 
@@ -2647,7 +2645,6 @@ class TestCQL(Tester):
         res = cursor.execute("select zipcode from zipcodes where group='test' AND zipcode IN ('06902','73301','94102') and state IN ('CT','CA') and fips_regions < 0")
         assert len(res) == 0, res
 
-    @since('3.0')
     def multi_in_compact_non_composite_test(self):
         cursor = self.prepare()
 
@@ -2687,7 +2684,6 @@ class TestCQL(Tester):
         self.assertEqual(1, len(rows))
         self.assertEqual((0, 0, 0), rows[0])
 
-    @since('1.2.1')
     def timeuuid_test(self):
         cursor = self.prepare()
 
@@ -2757,7 +2753,6 @@ class TestCQL(Tester):
         res = cursor.execute("SELECT * FROM bar")
         assert rows_to_list(res) == [[1, 2]], res
 
-    @since('2.0')
     def clustering_indexing_test(self):
         cursor = self.prepare()
 
@@ -2800,7 +2795,6 @@ class TestCQL(Tester):
         res = cursor.execute("SELECT v1 FROM posts WHERE time = 1")
         assert rows_to_list(res) == [ ['B'], ['E'] ], res
 
-    @since('2.0')
     def invalid_clustering_indexing_test(self):
         cursor = self.prepare()
 
@@ -2817,7 +2811,6 @@ class TestCQL(Tester):
         assert_invalid(cursor, "CREATE INDEX ON test3(c)")
 
 
-    @since('2.0')
     def edge_2i_on_complex_pk_test(self):
         cursor = self.prepare()
 
@@ -2982,7 +2975,6 @@ class TestCQL(Tester):
         res = cursor.execute("SELECT * FROM test");
         assert rows_to_list(res) == [[ 0, '' ]], res
 
-    @since('2.0')
     def rename_test(self):
         cursor = self.prepare()
 
@@ -3015,7 +3007,6 @@ class TestCQL(Tester):
 
         cursor.execute("SELECT dateOf(t) FROM test");
 
-    @since('2.0')
     def conditional_update_test(self):
         cursor = self.prepare()
 
@@ -3081,7 +3072,6 @@ class TestCQL(Tester):
             # Should apply
             assert_one(cursor, "DELETE FROM test WHERE k = 0 IF v1 IN (null)", [ True ])
 
-    @since('2.1.1')
     def non_eq_conditional_update_test(self):
         cursor = self.prepare()
 
@@ -3106,7 +3096,6 @@ class TestCQL(Tester):
         assert_one(cursor, "UPDATE test SET v2 = 'bar' WHERE k = 0 IF v1 IN (142, 276)", [ False, 2 ])
         assert_one(cursor, "UPDATE test SET v2 = 'bar' WHERE k = 0 IF v1 IN ()", [ False, 2 ])
 
-    @since('2.0.7')
     def conditional_delete_test(self):
         cursor = self.prepare()
 
@@ -3178,7 +3167,6 @@ class TestCQL(Tester):
         assert_all(cursor, "SELECT * FROM test", [[0], [1], [-1]])
         assert_invalid(cursor, "SELECT * FROM test WHERE k >= -1 AND k < 1;")
 
-    @since('2.0')
     def select_with_alias_test(self):
         cursor = self.prepare()
         cursor.execute('CREATE TABLE users (id int PRIMARY KEY, name text)')
@@ -3284,7 +3272,6 @@ class TestCQL(Tester):
 
         assert_one(cursor, "SELECT * FROM test", [ 1, set([2]) ])
 
-    @since('2.0.1')
     def select_distinct_test(self):
         cursor = self.prepare()
 
@@ -3370,7 +3357,6 @@ class TestCQL(Tester):
         cursor.execute("CREATE INDEX ON test(a)")
         assert_invalid(cursor, "SELECT * FROM test WHERE a = 3 AND b IN (1, 3)")
 
-    @since('2.0')
     def bug_6069_test(self):
         cursor = self.prepare()
 
@@ -3419,7 +3405,6 @@ class TestCQL(Tester):
         # Insert a non-version 1 uuid
         assert_invalid(cursor, "INSERT INTO test(k, c, v) VALUES (0, 0, 550e8400-e29b-41d4-a716-446655440000)")
 
-    @since('2.1')
     def user_types_test(self):
         cursor = self.prepare()
 
@@ -3476,7 +3461,6 @@ class TestCQL(Tester):
         res = cursor.execute(stmt)
         ## TODO: deserialize the value here and check it's right.
 
-    @since('2.1')
     def more_user_types_test(self):
         """ user type test that does a little more nesting"""
 
@@ -3507,7 +3491,6 @@ class TestCQL(Tester):
         cursor.execute("SELECT * FROM test")
 
 
-    @since('1.2')
     def bug_6327_test(self):
         cursor = self.prepare()
 
@@ -3523,7 +3506,6 @@ class TestCQL(Tester):
         self.cluster.flush()
         assert_one(cursor, "SELECT v FROM test WHERE k=0 AND v IN (1, 0)", [0])
 
-    @since('1.2')
     def large_count_test(self):
         cursor = self.prepare()
 
@@ -3556,7 +3538,6 @@ class TestCQL(Tester):
 
         assert_one(cursor, "SELECT COUNT(*) FROM test", [15000])
 
-    @since('2.1')
     def collection_indexing_test(self):
         cursor = self.prepare()
 
@@ -3600,7 +3581,6 @@ class TestCQL(Tester):
         assert_none(cursor, "SELECT k, v FROM test  WHERE m CONTAINS 4")
 
 
-    @since('2.1')
     def map_keys_indexing(self):
         cursor = self.prepare()
 
@@ -3642,7 +3622,6 @@ class TestCQL(Tester):
 
     #    assert_all(cursor, "SELECT * FROM test", [[nan], [inf], [-inf]])
 
-    @since('2.0')
     def static_columns_test(self):
         cursor = self.prepare()
 
@@ -3713,7 +3692,6 @@ class TestCQL(Tester):
         assert_all(cursor, "SELECT * FROM test", [[0, 1, None, 1], [0, 2, None, 2]])
 
 
-    @since('2.0')
     def static_columns_cas_test(self):
         cursor = self.prepare()
 
@@ -3847,7 +3825,6 @@ class TestCQL(Tester):
             """)
 
 
-    @since('2.0')
     def static_columns_with_2i_test(self):
         cursor = self.prepare()
 
@@ -3873,7 +3850,6 @@ class TestCQL(Tester):
         # We don't support that
         assert_invalid(cursor, "SELECT s FROM test WHERE v = 1")
 
-    @since('2.0')
     def static_columns_with_distinct_test(self):
         cursor = self.prepare()
 
@@ -3983,7 +3959,6 @@ class TestCQL(Tester):
             assert_one(cursor, "select count(*) from test where field3 = false limit 1;", [1])
 
 
-    @since('2.0')
     def cas_and_ttl_test(self):
         cursor = self.prepare()
         cursor.execute("CREATE TABLE test (k int PRIMARY KEY, v int, lock boolean)")
@@ -3993,7 +3968,6 @@ class TestCQL(Tester):
         time.sleep(2)
         assert_one(cursor, "UPDATE test SET v = 1 WHERE k = 0 IF lock = null", [True])
 
-    @since('2.0')
     def tuple_notation_test(self):
         """ Test the syntax introduced by #4851 """
         cursor = self.prepare()
@@ -4019,7 +3993,6 @@ class TestCQL(Tester):
 
         assert_invalid(cursor, "SELECT v1, v2, v3 FROM test WHERE k = 0 AND (v1, v3) > (1, 0)")
 
-    @since('2.1.1')
     def test_v2_protocol_IN_with_tuples(self):
         """ Test for CASSANDRA-8062 """
         cursor = self.prepare()
@@ -4045,7 +4018,6 @@ class TestCQL(Tester):
 
         assert_all(cursor, "SELECT * FROM test WHERE k=0 AND c1 = 0 AND c2 IN (2, 0) ORDER BY c1 DESC", [[0, 0, 2], [0, 0, 0]])
 
-    @since('2.1')
     def in_order_by_without_selecting_test(self):
         """ Test that columns don't need to be selected for ORDER BY when there is a IN (#4911) """
 
@@ -4078,7 +4050,6 @@ class TestCQL(Tester):
         # since we don't know the write times, just assert that the order matches the order we expect
         self.assertEqual(results, list(sorted(results)))
 
-    @since('2.0')
     def cas_and_compact_test(self):
         """ Test for CAS with compact storage table, and #6813 in particular """
         cursor = self.prepare()
@@ -4100,7 +4071,6 @@ class TestCQL(Tester):
 
         assert_one(cursor, "INSERT INTO lock(partition, key, owner) VALUES ('a', 'c', 'x') IF NOT EXISTS", [True])
 
-    @since('2.1.1')
     def whole_list_conditional_test(self):
         cursor = self.prepare()
 
@@ -4168,7 +4138,6 @@ class TestCQL(Tester):
             # not supported yet
             check_invalid("m CONTAINS 'bar'", expected=SyntaxException)
 
-    @since('2.0')
     def list_item_conditional_test(self):
         # Lists
         cursor = self.prepare()
@@ -4198,7 +4167,6 @@ class TestCQL(Tester):
             assert_one(cursor, "DELETE FROM tlist WHERE k=0 IF l[1] = 'bar'", [True])
             assert_none(cursor, "SELECT * FROM tlist")
 
-    @since('2.1.1')
     def expanded_list_item_conditional_test(self):
         # expanded functionality from CASSANDRA-6839
 
@@ -4265,7 +4233,6 @@ class TestCQL(Tester):
             check_invalid("l[1] CONTAINS KEY 367", expected=SyntaxException)
             check_invalid("l[null] = null")
 
-    @since('2.1.1')
     def whole_set_conditional_test(self):
         cursor = self.prepare()
 
@@ -4334,7 +4301,6 @@ class TestCQL(Tester):
             # not supported yet
             check_invalid("m CONTAINS 'bar'", expected=SyntaxException)
 
-    @since('2.1.1')
     def whole_map_conditional_test(self):
         cursor = self.prepare()
 
@@ -4398,7 +4364,6 @@ class TestCQL(Tester):
             check_invalid("m CONTAINS null", expected=SyntaxException)
             check_invalid("m CONTAINS KEY null", expected=SyntaxException)
 
-    @since('2.0')
     def map_item_conditional_test(self):
         cursor = self.prepare()
 
@@ -4429,7 +4394,6 @@ class TestCQL(Tester):
                 else:
                     assert_one(cursor, "UPDATE tmap set m['foo'] = 'bar', m['bar'] = 'foo' WHERE k = 1 IF m['foo'] IN ('blah', null)", [True])
 
-    @since('2.1.1')
     def expanded_map_item_conditional_test(self):
         # expanded functionality from CASSANDRA-6839
         cursor = self.prepare()
@@ -4493,7 +4457,6 @@ class TestCQL(Tester):
             check_invalid("m['foo'] CONTAINS KEY 367", expected=SyntaxException)
             check_invalid("m[null] = null")
 
-    @since("2.1.1")
     def cas_and_list_index_test(self):
         """ Test for 7499 test """
         cursor = self.prepare()
@@ -4514,7 +4477,6 @@ class TestCQL(Tester):
         assert_one(cursor, "SELECT * FROM test", [0, ['foo', 'bar'], 'foobar' ])
 
 
-    @since("2.0")
     def static_with_limit_test(self):
         """ Test LIMIT when static columns are present (#6956) """
         cursor = self.prepare()
@@ -4536,7 +4498,6 @@ class TestCQL(Tester):
         assert_all(cursor, "SELECT * FROM test WHERE k = 0 LIMIT 2", [[0, 0, 42], [0, 1, 42]])
         assert_all(cursor, "SELECT * FROM test WHERE k = 0 LIMIT 3", [[0, 0, 42], [0, 1, 42], [0, 2, 42]])
 
-    @since("2.0")
     def static_with_empty_clustering_test(self):
         """ Test for bug of #7455 """
         cursor = self.prepare()
@@ -4556,7 +4517,6 @@ class TestCQL(Tester):
 
         assert_one(cursor, "SELECT * FROM test", ['partition1', '', 'static value', 'value'])
 
-    @since("1.2")
     def limit_compact_table(self):
         """ Check for #7052 bug """
         cursor = self.prepare()
@@ -4609,7 +4569,6 @@ class TestCQL(Tester):
 
         assert_all(cursor, "SELECT * FROM test WHERE k2 = 0 AND v >= 2 ALLOW FILTERING", [[2, 0, 7], [0, 0, 3], [1, 0, 4]]);
 
-    @since('2.1')
     def invalid_custom_timestamp_test(self):
         cursor = self.prepare()
 
@@ -4634,7 +4593,6 @@ class TestCQL(Tester):
         assert_invalid(cursor, "BEGIN COUNTER BATCH USING TIMESTAMP 3 UPDATE counters SET c = c + 1 WHERE k = 0; UPDATE counters SET c = c + 1 WHERE k = 0; APPLY BATCH")
 
 
-    @since('2.1')
     def add_field_to_udt_test(self):
         cursor = self.prepare()
 
@@ -4645,7 +4603,6 @@ class TestCQL(Tester):
         cursor.execute("ALTER TYPE footype ADD foomap map <int,text>")
         cursor.execute("INSERT INTO test (key, data) VALUES (1, {fooint: 1, fooset: {'2'}, foomap: {3 : 'bar'}})")
 
-    @since('1.2')
     def clustering_order_in_test(self):
         """Test for #7105 bug"""
         cursor = self.prepare()
@@ -4665,7 +4622,6 @@ class TestCQL(Tester):
         assert_one(cursor, "SELECT * FROM test WHERE a=1 AND b=2 AND c IN (3)", [1, 2, 3])
         assert_one(cursor, "SELECT * FROM test WHERE a=1 AND b=2 AND c IN (3, 4)", [1, 2, 3])
 
-    @since('1.2')
     def bug7105_test(self):
         """Test for #7105 bug"""
         cursor = self.prepare()
@@ -4686,7 +4642,6 @@ class TestCQL(Tester):
         assert_one(cursor, "SELECT * FROM test WHERE a=1 AND b=2 ORDER BY b DESC", [1, 2, 3, 3])
 
 
-    @since('2.0')
     def conditional_ddl_keyspace_test(self):
         cursor = self.prepare(create_keyspace=False)
 
@@ -4719,7 +4674,6 @@ class TestCQL(Tester):
 
         assert_none(cursor, "select * from system.schema_keyspaces where keyspace_name = 'my_test_ks'")
 
-    @since('2.0')
     def conditional_ddl_table_test(self):
         cursor = self.prepare(create_keyspace=False)
 
@@ -4763,7 +4717,6 @@ class TestCQL(Tester):
             """select * from system.schema_columnfamilies
                where keyspace_name = 'my_test_ks' and columnfamily_name = 'my_test_table'""")
 
-    @since('2.0')
     def conditional_ddl_index_test(self):
         cursor = self.prepare(create_keyspace=False)
 
@@ -4793,7 +4746,6 @@ class TestCQL(Tester):
         cursor.execute("DROP INDEX IF EXISTS myindex")
         assert_none(cursor, """select index_name from system."IndexInfo" where table_name = 'my_test_ks'""")
 
-    @since('2.1')
     @freshCluster()
     def conditional_ddl_type_test(self):
         cursor = self.prepare(create_keyspace=False)
@@ -4821,7 +4773,6 @@ class TestCQL(Tester):
             cursor,
             "SELECT type_name from system.schema_usertypes where keyspace_name='my_test_ks' and type_name='mytype'")
 
-    @since('2.0')
     def bug_6612_test(self):
         cursor = self.prepare()
 
@@ -4847,7 +4798,6 @@ class TestCQL(Tester):
 
         assert_one(cursor, "select count(*) from session_data where app_name='foo' and account='bar' and last_access > 4 allow filtering", [1])
 
-    @since('2.0')
     def blobAs_functions_test(self):
         cursor = self.prepare()
 
@@ -4911,7 +4861,6 @@ class TestCQL(Tester):
 
         assert_one(cursor, "SELECT writetime(v) FROM TEST WHERE k = 1", [ -42 ])
 
-    @since('3.0')
     @require("7396")
     def select_map_key_single_row_test(self):
         cursor = self.prepare()
@@ -4934,7 +4883,6 @@ class TestCQL(Tester):
 
         assert_one(cursor, "SELECT sizeof(v) FROM test where k = 0", [4])
 
-    @since('3.0')
     @require("7396")
     def select_set_key_single_row_test(self):
         cursor = self.prepare()
@@ -4960,7 +4908,6 @@ class TestCQL(Tester):
 
         assert_one(cursor, "SELECT sizeof(v) FROM test where k = 0", [4])
 
-    @since('3.0')
     @require("7396")
     def select_list_key_single_row_test(self):
         cursor = self.prepare()
@@ -4983,7 +4930,6 @@ class TestCQL(Tester):
 
         assert_one(cursor, "SELECT sizeof(v) FROM test where k = 0", [4])
 
-    @since('3.0')
     @require("7396")
     def select_map_key_multi_row_test(self):
         cursor = self.prepare()
@@ -5007,7 +4953,6 @@ class TestCQL(Tester):
 
         assert_all(cursor, "SELECT sizeof(v) FROM test", [[4], [4]])
 
-    @since('3.0')
     @require("7396")
     def select_set_key_multi_row_test(self):
         cursor = self.prepare()
@@ -5033,7 +4978,6 @@ class TestCQL(Tester):
 
         assert_all(cursor, "SELECT sizeof(v) FROM test", [[4], [4]])
 
-    @since('3.0')
     @require("7396")
     def select_list_key_multi_row_test(self):
         cursor = self.prepare()
