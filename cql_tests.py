@@ -274,9 +274,6 @@ class TestCQL(Tester):
 
         assert_invalid(cursor, "CREATE TABLE test ()", expected=SyntaxException)
 
-        if self.cluster.version() < "1.2":
-            assert_invalid(cursor, "CREATE TABLE test (key text PRIMARY KEY)")
-
         assert_invalid(cursor, "CREATE TABLE test (c1 text, c2 text, c3 text)")
         assert_invalid(cursor, "CREATE TABLE test (key1 text PRIMARY KEY, key2 text PRIMARY KEY)")
 
@@ -332,10 +329,7 @@ class TestCQL(Tester):
         # Check that we do limit the output to 1 *and* that we respect query
         # order of keys (even though 48 is after 2)
         res = cursor.execute("SELECT * FROM clicks WHERE userid IN (48, 2) LIMIT 1")
-        if self.cluster.version() >= '3.0':
-            assert rows_to_list(res) == [[ 2, 'http://foo.com', 42 ]], res
-        else:
-            assert rows_to_list(res) == [[ 48, 'http://foo.com', 42 ]], res
+        assert rows_to_list(res) == [[ 2, 'http://foo.com', 42 ]], res
 
     def tuple_query_mixed_order_columns_prepare(self, cursor, *col_order):
         cursor.execute("""
@@ -623,10 +617,7 @@ class TestCQL(Tester):
             cursor.execute("INSERT INTO test1 (k, c, v) VALUES (0, %i, %i)" % (x, x))
 
         res = cursor.execute("SELECT v FROM test1 WHERE k = 0 AND c IN (5, 2, 8)")
-        if self.cluster.version() <= "1.2":
-            assert rows_to_list(res) == [[5], [2], [8]], res
-        else:
-            assert rows_to_list(res) == [[2], [5], [8]], res
+        assert rows_to_list(res) == [[2], [5], [8]], res
 
         # composites
         cursor.execute("""
@@ -644,10 +635,7 @@ class TestCQL(Tester):
             cursor.execute("INSERT INTO test2 (k, c1, c2, v) VALUES (0, 0, %i, %i)" % (x, x))
 
         # Check first we don't allow IN everywhere
-        if self.cluster.version() >= '3.0':
-            assert_none(cursor, "SELECT v FROM test2 WHERE k = 0 AND c1 IN (5, 2, 8) AND c2 = 3")
-        else:
-            assert_invalid(cursor, "SELECT v FROM test2 WHERE k = 0 AND c1 IN (5, 2, 8) AND c2 = 3")
+        assert_none(cursor, "SELECT v FROM test2 WHERE k = 0 AND c1 IN (5, 2, 8) AND c2 = 3")
 
         res = cursor.execute("SELECT v FROM test2 WHERE k = 0 AND c1 = 0 AND c2 IN (5, 2, 8)")
         assert rows_to_list(res) == [[2], [5], [8]], res
@@ -950,10 +938,6 @@ class TestCQL(Tester):
         res = cursor.execute("SELECT * FROM testcf2")
         assert rows_to_list(res) == [ list(row1), list(row2) ], res
 
-        # Won't be allowed until #3708 is in
-        if self.cluster.version() < "1.2":
-            assert_invalid(cursor, "DELETE FROM testcf2 WHERE username='abc' AND id=2")
-
     def count_test(self):
         cursor = self.prepare()
 
@@ -1111,11 +1095,8 @@ class TestCQL(Tester):
         inOrder = [ x[0] for x in rows ]
         assert len(inOrder) == c, 'Expecting %d elements, got %d' % (c, len(inOrder))
 
-        if self.cluster.version() < '1.2':
-            cursor.execute("SELECT k FROM test WHERE token(k) >= 0")
-        else:
-            min_token = -2**63
-        res =     cursor.execute("SELECT k FROM test WHERE token(k) >= %d" % min_token)
+        min_token = -2**63
+        res = cursor.execute("SELECT k FROM test WHERE token(k) >= %d" % min_token)
         assert len(res) == c, "%s [all: %s]" % (str(res), str(inOrder))
 
         #assert_invalid(cursor, "SELECT k FROM test WHERE token(k) >= 0")
@@ -1404,31 +1385,22 @@ class TestCQL(Tester):
           WITH compression_parameters:sstable_compressor = 'DeflateCompressor';
         """, expected=SyntaxException)
 
-        if self.cluster.version() >= '1.2':
-            assert_invalid(cursor, """
-              CREATE TABLE users (key varchar PRIMARY KEY, password varchar, gender varchar)
-              WITH compression = { 'sstable_compressor' : 'DeflateCompressor' };
-            """, expected=ConfigurationException)
+        assert_invalid(cursor, """
+          CREATE TABLE users (key varchar PRIMARY KEY, password varchar, gender varchar)
+          WITH compression = { 'sstable_compressor' : 'DeflateCompressor' };
+        """, expected=ConfigurationException)
 
     def keyspace_creation_options_test(self):
         """ Check one can use arbitrary name for datacenter when creating keyspace (#4278) """
         cursor = self.prepare()
 
         # we just want to make sure the following is valid
-        if self.cluster.version() >= '1.2':
-            cursor.execute("""
-                CREATE KEYSPACE Foo
-                    WITH replication = { 'class' : 'NetworkTopologyStrategy',
-                                         'us-east' : 1,
-                                         'us-west' : 1 };
-            """)
-        else:
-            cursor.execute("""
-                CREATE KEYSPACE Foo
-                    WITH strategy_class='NetworkTopologyStrategy'
-                     AND strategy_options:"us-east"=1
-                     AND strategy_options:"us-west"=1;
-            """)
+        cursor.execute("""
+            CREATE KEYSPACE Foo
+                WITH replication = { 'class' : 'NetworkTopologyStrategy',
+                                     'us-east' : 1,
+                                     'us-west' : 1 };
+        """)
 
     def set_test(self):
         cursor = self.prepare()
@@ -1469,10 +1441,7 @@ class TestCQL(Tester):
 
         cursor.execute("DELETE tags FROM user WHERE fn='Bilbo' AND ln='Baggins'")
         res = cursor.execute("SELECT tags FROM user WHERE fn='Bilbo' AND ln='Baggins'")
-        if self.cluster.version() <= "1.2":
-            assert rows_to_list(res) == [None], res
-        else:
-            assert rows_to_list(res) == [], res
+        assert rows_to_list(res) == [], res
 
 
     def map_test(self):
@@ -1511,10 +1480,7 @@ class TestCQL(Tester):
 
         cursor.execute(q % "m = {}")
         res = cursor.execute("SELECT m FROM user WHERE fn='Bilbo' AND ln='Baggins'")
-        if self.cluster.version() <= "1.2":
-            assert rows_to_list(res) == [None], res
-        else:
-            assert rows_to_list(res) == [], res
+        assert rows_to_list(res) == [], res
 
     def list_test(self):
         cursor = self.prepare()
@@ -1634,12 +1600,9 @@ class TestCQL(Tester):
         res = cursor.execute("SELECT * FROM test")
         assert rows_to_list(res) == [['ɸ', 'ɸ', set([u'ɸ']), 'ɸ']], res
 
-        if self.cluster.version() < "2.1":
-            assert_invalid(cursor, "ALTER TABLE test ALTER s TYPE set<blob>", expected=ConfigurationException)
-        else:
-            cursor.execute("ALTER TABLE test ALTER s TYPE set<blob>")
-            res = cursor.execute("SELECT * FROM test")
-            assert rows_to_list(res) == [['ɸ', 'ɸ', set(['ɸ']), 'ɸ']], res
+        cursor.execute("ALTER TABLE test ALTER s TYPE set<blob>")
+        res = cursor.execute("SELECT * FROM test")
+        assert rows_to_list(res) == [['ɸ', 'ɸ', set(['ɸ']), 'ɸ']], res
 
 
     def composite_row_key_test(self):
@@ -3068,9 +3031,7 @@ class TestCQL(Tester):
         assert_one(cursor, "DELETE FROM test WHERE k = 0 IF v1 = null", [ True ])
         assert_none(cursor, "SELECT * FROM test")
 
-        if self.cluster.version() > "2.1.1":
-            # Should apply
-            assert_one(cursor, "DELETE FROM test WHERE k = 0 IF v1 IN (null)", [ True ])
+        assert_one(cursor, "DELETE FROM test WHERE k = 0 IF v1 IN (null)", [ True ])
 
     def non_eq_conditional_update_test(self):
         cursor = self.prepare()
@@ -3146,13 +3107,11 @@ class TestCQL(Tester):
         assert_one(cursor, "DELETE FROM test2 WHERE k='k' AND i=0 IF EXISTS", [False])
 
         # CASSANDRA-6430
-        v = self.cluster.version()
-        if v >= "2.1.1" or v < "2.1" and v >= "2.0.11":
-            assert_invalid(cursor, "DELETE FROM test2 WHERE k = 'k' IF EXISTS")
-            assert_invalid(cursor, "DELETE FROM test2 WHERE k = 'k' IF v = 'foo'")
-            assert_invalid(cursor, "DELETE FROM test2 WHERE i = 0 IF EXISTS")
-            assert_invalid(cursor, "DELETE FROM test2 WHERE k = 0 AND i > 0 IF EXISTS")
-            assert_invalid(cursor, "DELETE FROM test2 WHERE k = 0 AND i > 0 IF v = 'foo'")
+        assert_invalid(cursor, "DELETE FROM test2 WHERE k = 'k' IF EXISTS")
+        assert_invalid(cursor, "DELETE FROM test2 WHERE k = 'k' IF v = 'foo'")
+        assert_invalid(cursor, "DELETE FROM test2 WHERE i = 0 IF EXISTS")
+        assert_invalid(cursor, "DELETE FROM test2 WHERE k = 0 AND i > 0 IF EXISTS")
+        assert_invalid(cursor, "DELETE FROM test2 WHERE k = 0 AND i > 0 IF v = 'foo'")
 
     @freshCluster()
     def range_key_ordered_test(self):
@@ -3807,22 +3766,13 @@ class TestCQL(Tester):
         """, [True])
         assert_all(cursor, "SELECT * FROM test WHERE id=1", [[1, 'k1', 1, 'val1'], [1, 'k2', 1, 'newVal'], [1, 'k3', 1, 'val3']])
 
-        if self.cluster.version() >= '2.1':
-            assert_one(cursor,
-            """
-              BEGIN BATCH
-                UPDATE test SET v='newVal1' WHERE id=1 AND k='k2' IF v='val2';
-                UPDATE test SET v='newVal2' WHERE id=1 AND k='k2' IF v='val3';
-              APPLY BATCH
-            """, [False, 1, 'k2', 'newVal'])
-        else:
-            assert_invalid(cursor,
-            """
-              BEGIN BATCH
-                UPDATE test SET v='newVal1' WHERE id=1 AND k='k2' IF v='val2';
-                UPDATE test SET v='newVal2' WHERE id=1 AND k='k2' IF v='val3';
-              APPLY BATCH
-            """)
+        assert_one(cursor,
+        """
+          BEGIN BATCH
+            UPDATE test SET v='newVal1' WHERE id=1 AND k='k2' IF v='val2';
+            UPDATE test SET v='newVal2' WHERE id=1 AND k='k2' IF v='val3';
+          APPLY BATCH
+        """, [False, 1, 'k2', 'newVal'])
 
 
     def static_columns_with_2i_test(self):
@@ -3953,10 +3903,7 @@ class TestCQL(Tester):
         cursor.execute("insert into test(field1, field2, field3) values ('hola', now(), false);");
         cursor.execute("insert into test(field1, field2, field3) values ('hola', now(), false);");
 
-        if self.cluster.version() > '3.0':
-            assert_one(cursor, "select count(*) from test where field3 = false limit 1;", [2])
-        else:
-            assert_one(cursor, "select count(*) from test where field3 = false limit 1;", [1])
+        assert_one(cursor, "select count(*) from test where field3 = false limit 1;", [2])
 
 
     def cas_and_ttl_test(self):
@@ -4039,10 +3986,7 @@ class TestCQL(Tester):
         assert_all(cursor, "SELECT v FROM test WHERE k=0 AND c1 = 0 AND c2 IN (2, 0)", [[0], [2]])
         assert_all(cursor, "SELECT v FROM test WHERE k=0 AND c1 = 0 AND c2 IN (2, 0) ORDER BY c1 ASC", [[0], [2]])
         assert_all(cursor, "SELECT v FROM test WHERE k=0 AND c1 = 0 AND c2 IN (2, 0) ORDER BY c1 DESC", [[2], [0]])
-        if self.cluster.version() >= '3.0':
-            assert_all(cursor, "SELECT v FROM test WHERE k IN (1, 0)", [[0], [1], [2], [3], [4], [5]])
-        else:
-            assert_all(cursor, "SELECT v FROM test WHERE k IN (1, 0)", [[3], [4], [5], [0], [1], [2]])
+        assert_all(cursor, "SELECT v FROM test WHERE k IN (1, 0)", [[0], [1], [2], [3], [4], [5]])
         assert_all(cursor, "SELECT v FROM test WHERE k IN (1, 0) ORDER BY c1 ASC", [[0], [1], [2], [3], [4], [5]])
 
         # we should also be able to use functions in the select clause (additional test for CASSANDRA-8286)
@@ -4074,7 +4018,7 @@ class TestCQL(Tester):
     def whole_list_conditional_test(self):
         cursor = self.prepare()
 
-        frozen_values = (False, True) if self.cluster.version() >= "2.1.3" else (False,)
+        frozen_values = (False, True)
         for frozen in frozen_values:
 
             cursor.execute("DROP TABLE IF EXISTS tlist")
@@ -4142,7 +4086,7 @@ class TestCQL(Tester):
         # Lists
         cursor = self.prepare()
 
-        frozen_values = (False, True) if self.cluster.version() >= "2.1.3" else (False,)
+        frozen_values = (False, True)
         for frozen in frozen_values:
 
             cursor.execute("DROP TABLE IF EXISTS tlist")
@@ -4157,9 +4101,6 @@ class TestCQL(Tester):
 
             assert_invalid(cursor, "DELETE FROM tlist WHERE k=0 IF l[null] = 'foobar'")
             assert_invalid(cursor, "DELETE FROM tlist WHERE k=0 IF l[-2] = 'foobar'")
-            if self.cluster.version() < "2.1":
-                # no longer invalid after CASSANDRA-6839
-                assert_invalid(cursor, "DELETE FROM tlist WHERE k=0 IF l[3] = 'foobar'")
             assert_one(cursor, "DELETE FROM tlist WHERE k=0 IF l[1] = null", [False, ['foo', 'bar', 'foobar']])
             assert_one(cursor, "DELETE FROM tlist WHERE k=0 IF l[1] = 'foobar'", [False, ['foo', 'bar', 'foobar']])
             assert_one(cursor, "SELECT * FROM tlist", [0, ['foo', 'bar', 'foobar']])
@@ -4172,7 +4113,7 @@ class TestCQL(Tester):
 
         cursor = self.prepare()
 
-        frozen_values = (False, True) if self.cluster.version() >= "2.1.3" else (False,)
+        frozen_values = (False, True)
         for frozen in frozen_values:
             cursor.execute("DROP TABLE IF EXISTS tlist")
 
@@ -4236,7 +4177,7 @@ class TestCQL(Tester):
     def whole_set_conditional_test(self):
         cursor = self.prepare()
 
-        frozen_values = (False, True) if self.cluster.version() >= "2.1.3" else (False,)
+        frozen_values = (False, True)
         for frozen in frozen_values:
 
             cursor.execute("DROP TABLE IF EXISTS tset")
@@ -4304,7 +4245,7 @@ class TestCQL(Tester):
     def whole_map_conditional_test(self):
         cursor = self.prepare()
 
-        frozen_values = (False, True) if self.cluster.version() >= "2.1.3" else (False,)
+        frozen_values = (False, True)
         for frozen in frozen_values:
 
             cursor.execute("DROP TABLE IF EXISTS tmap")
@@ -4367,7 +4308,7 @@ class TestCQL(Tester):
     def map_item_conditional_test(self):
         cursor = self.prepare()
 
-        frozen_values = (False, True) if self.cluster.version() >= "2.1.3" else (False,)
+        frozen_values = (False, True)
         for frozen in frozen_values:
 
             cursor.execute("DROP TABLE IF EXISTS tmap")
@@ -4387,18 +4328,17 @@ class TestCQL(Tester):
             assert_one(cursor, "DELETE FROM tmap WHERE k=0 IF m['foo'] = 'bar'", [True])
             assert_none(cursor, "SELECT * FROM tmap")
 
-            if self.cluster.version() > "2.1.1":
-                cursor.execute("INSERT INTO tmap(k, m) VALUES (1, null)")
-                if frozen:
-                    assert_invalid(cursor, "UPDATE tmap set m['foo'] = 'bar', m['bar'] = 'foo' WHERE k = 1 IF m['foo'] IN ('blah', null)")
-                else:
-                    assert_one(cursor, "UPDATE tmap set m['foo'] = 'bar', m['bar'] = 'foo' WHERE k = 1 IF m['foo'] IN ('blah', null)", [True])
+            cursor.execute("INSERT INTO tmap(k, m) VALUES (1, null)")
+            if frozen:
+                assert_invalid(cursor, "UPDATE tmap set m['foo'] = 'bar', m['bar'] = 'foo' WHERE k = 1 IF m['foo'] IN ('blah', null)")
+            else:
+                assert_one(cursor, "UPDATE tmap set m['foo'] = 'bar', m['bar'] = 'foo' WHERE k = 1 IF m['foo'] IN ('blah', null)", [True])
 
     def expanded_map_item_conditional_test(self):
         # expanded functionality from CASSANDRA-6839
         cursor = self.prepare()
 
-        frozen_values = (False, True) if self.cluster.version() >= "2.1.3" else (False,)
+        frozen_values = (False, True)
         for frozen in frozen_values:
 
             cursor.execute("DROP TABLE IF EXISTS tmap")
