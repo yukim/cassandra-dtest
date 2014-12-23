@@ -24,9 +24,9 @@ class TestSSTableSplit(Tester):
         node.stress( ['write', 'n=1000000', '-rate', 'threads=50'] )
 
         self._do_compaction(node)
-        self._do_split(node, version)
+        self._do_split(node)
         self._do_compaction(node)
-        self._do_split(node, version)
+        self._do_split(node)
 
         node.stress( ['read', 'n=1000000', '-rate', 'threads=25'] )
 
@@ -39,7 +39,7 @@ class TestSSTableSplit(Tester):
         sstables = node.get_sstables(keyspace, '')
         debug("Number of sstables after compaction: %s" % len(sstables))
 
-    def _do_split(self, node, version):
+    def _do_split(self, node):
         debug("Run sstablesplit")
         time.sleep(5.0)
         node.stop()
