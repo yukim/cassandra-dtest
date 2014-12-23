@@ -2,8 +2,8 @@ import time
 
 from dtest import Tester, debug
 from pyassertions import assert_unavailable
-from pytools import create_c1c2_table, insert_c1c2, query_c1c2, retry_till_success,
-                   insert_columns, new_node, no_vnodes
+from pytools import (create_c1c2_table, insert_c1c2, query_c1c2, retry_till_success,
+                   insert_columns, new_node, no_vnodes)
 from cassandra import ConsistencyLevel
 
 class TestBootstrapConsistency(Tester):
