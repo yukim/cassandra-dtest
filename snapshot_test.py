@@ -212,7 +212,7 @@ class TestArchiveCommitlog(SnapshotTester):
             # Restore schema from snapshots:
             self.restore_snapshot(system_ks_snapshot_dir, node1, 'system', 'schema_keyspaces', 'keyspaces')
             self.restore_snapshot(system_col_snapshot_dir, node1, 'system', 'schema_columns', 'columns')
-                self.restore_snapshot(system_ut_snapshot_dir, node1, 'system', 'schema_usertypes', 'usertypes')
+            self.restore_snapshot(system_ut_snapshot_dir, node1, 'system', 'schema_usertypes', 'usertypes')
             self.restore_snapshot(system_cfs_snapshot_dir, node1, 'system', 'schema_columnfamilies', 'cfs')
             self.restore_snapshot(snapshot_dir, node1, 'ks', 'cf', 'basic')
 
