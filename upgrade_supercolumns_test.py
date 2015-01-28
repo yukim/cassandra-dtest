@@ -1,7 +1,7 @@
 from dtest import Tester, debug
 from ccmlib.cluster import Cluster
 from ccmlib.common import get_version_from_build
-from pytools import since
+from tools import since
 import random, os, time, re
 
 # Tests upgrade between 1.2->2.0 for super columns (since that's where
@@ -69,6 +69,9 @@ class TestSCUpgrade(Tester):
         cli.do("get sc_test['k0']['sc1']['c1']")
         assert_columns(cli, ['c1'])
 
+        assert not cli.has_errors(), cli.errors()
+        cli.close()
+
     #CASSANDRA-7188
     @since('2.0')
     def upgrade_with_counters_test(self):
@@ -108,7 +111,8 @@ class TestSCUpgrade(Tester):
             time.sleep(.5)
         else:
             node1.drain()
-            node1.stop(wait_other_notice=True)
+            node1.watch_log_for("DRAINED")
+            node1.stop(wait_other_notice=False)
             self.set_node_to_current_version(node1)
             node1.start(wait_other_notice=True)
 
@@ -141,8 +145,10 @@ class TestSCUpgrade(Tester):
         else:
             node2.drain()
             node3.drain()
-            node2.stop(wait_other_notice=True)
-            node3.stop(wait_other_notice=True)
+            node2.watch_log_for("DRAINED")
+            node3.watch_log_for("DRAINED")
+            node2.stop(wait_other_notice=False)
+            node3.stop(wait_other_notice=False)
             self.set_node_to_current_version(node2)
             self.set_node_to_current_version(node3)
             node2.start(wait_other_notice=True)

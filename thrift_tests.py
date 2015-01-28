@@ -6,7 +6,7 @@ from thrift.protocol import TBinaryProtocol
 from thrift.Thrift import TApplicationException
 
 from dtest import Tester, debug, NUM_TOKENS, DISABLE_VNODES
-from pytools import since
+from tools import since
 from thrift_bindings.v30 import Cassandra
 from thrift_bindings.v30.Cassandra import *
 
@@ -1403,7 +1403,10 @@ class TestMutations(ThriftTester):
 
     def test_describe_keyspace(self):
         kspaces = client.describe_keyspaces()
-        assert len(kspaces) == 4, kspaces # ['Keyspace2', 'Keyspace1', 'system', 'system_traces']
+        if self.cluster.version() >= '3.0':
+            assert len(kspaces) == 5, kspaces # ['Keyspace2', 'Keyspace1', 'system', 'system_traces', 'system_auth']
+        else:
+            assert len(kspaces) == 4, kspaces # ['Keyspace2', 'Keyspace1', 'system', 'system_traces']
 
         sysks = client.describe_keyspace("system")
         assert sysks in kspaces

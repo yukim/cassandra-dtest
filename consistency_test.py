@@ -1,8 +1,8 @@
 import time
 
 from dtest import Tester, debug, DISABLE_VNODES
-from pyassertions import assert_unavailable
-from pytools import (create_c1c2_table, insert_c1c2, query_c1c2, retry_till_success,
+from assertions import assert_unavailable
+from tools import (create_c1c2_table, insert_c1c2, query_c1c2, retry_till_success,
                    insert_columns)
 from cassandra import ConsistencyLevel
 from cassandra.query import SimpleStatement
@@ -235,7 +235,7 @@ class TestConsistency(Tester):
 
         log_mark = node1.mark_log()
         node2.start()
-        node1.watch_log_for(["Finished hinted"], from_mark=log_mark, timeout=90)
+        node1.watch_log_for(["Finished hinted"], from_mark=log_mark, timeout=120)
 
         node1.stop(wait_other_notice=True, gently=False)
 
