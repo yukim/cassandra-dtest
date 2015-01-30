@@ -16,8 +16,8 @@ class TestCompactionPerf(Tester):
         return stats
 
     def read_update_workload(self, node, compstrat):
-        path = os.path.dirname(os.path.abspath(__file__)) + "wronly.txt"
-        node.stress(["mixed", "n=1000000", "ratio(read=3,write=1)", "-insert", "visits=EXP(1..5)", "partitions=fixed(1)", "select-ratio=fixed(1)/1", "-pop", "seq=1M..2M", "-schema", "compaction(strategy="+compstrat+")", "-log", "file=" + path])
+        path = os.path.dirname(os.path.abspath(__file__)) + "ruonly.txt"
+        node.stress(["mixed", "n=1000000", "ratio(read=3,write=1)", "-insert", "visits=EXP(1..5)", "partitions=fixed(1)", "select-ratio=fixed(1)/1", "-pop", "seq=1000000..2M", "-schema", "compaction(strategy="+compstrat+")", "-log", "file=" + path, "rate", "threads=200"])
         stats = self.get_stress_stats_from_file(path)
         return stats
 
