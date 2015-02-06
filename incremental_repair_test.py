@@ -120,9 +120,13 @@ class TestIncRepair(Tester):
         node2.flush()
 
         node2.stop(gently=False)
+        node1.stop(gently=False)
 
         node2.run_sstablerepairedset(keyspace='keyspace1')
+        node1.run_sstablerepairedset(keyspace='keyspace1')
+        
         node2.start()
+        node1.start()
 
         with open('initial.txt', 'w') as f:
             node2.run_sstablemetadata(output_file=f, keyspace='keyspace1')
@@ -131,8 +135,11 @@ class TestIncRepair(Tester):
         with open('initial.txt', 'r') as g:
             initialoutput = g.read()
 
+        midmatches = findall('(?<=Repaired at:).*', initialoutput)
+        debug(midmatches)
+
         node1.stop()
-        node2.stress(['write', 'n=15000', '-schema', 'replication(factor=2)'])
+        node2.stress(['write', 'n=15000', '-pop', 'seq=10000..25000', '-schema', 'replication(factor=2)'])
         node2.flush()
         node1.start()
 
@@ -162,11 +169,11 @@ class TestIncRepair(Tester):
                 index = uniquematches.index(value)
                 matchcount[index] = matchcount[index] + 1
 
-        self.assertGreaterEqual(len(uniquematches), 2)
+        self.assertGreater(len(uniquematches), 1)
 
-        self.assertGreaterEqual(max(matchcount), 2)
+        self.assertTrue(all(x in matches for x in midmatches))
 
-        self.assertNotIn('repairedAt: 0', finaloutput)
+        self.assertGreater(max(matchcount), 1)
 
         os.remove('initial.txt')
         os.remove('final.txt')
