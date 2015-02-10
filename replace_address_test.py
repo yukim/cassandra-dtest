@@ -5,6 +5,7 @@ from ccmlib.node import Node, NodeError, TimeoutError
 from cassandra import ConsistencyLevel, Unavailable, ReadTimeout
 from cassandra.query import SimpleStatement
 import time, re
+from assertions import assert_all
 
 class NodeUnavailable(Exception):
     pass
@@ -44,13 +45,25 @@ class TestReplaceAddress(Tester):
         debug(numNodes)
 
         debug("Inserting Data...")
-        node1.stress(['write', 'n=10000', '-schema', 'replication(factor=3)'])
+        if cluster.version() < "2.1":
+            node1.stress(['-o', 'insert', '--num-keys=10000', '--replication-factor=3'])
+        else:
+            node1.stress(['write', 'n=10000', '-schema', 'replication(factor=3)'])
 
         cursor = self.patient_cql_connection(node1)
+        cursor2 = self.patient_cql_connection(node2)
+
         cursor.default_timeout = 45
-        stress_table = 'keyspace1.standard1'
+        stress_table = 'keyspace1.standard1' if self.cluster.version() >= '2.1' else '"Keyspace1"."Standard1"'
         query = SimpleStatement('select * from %s LIMIT 1' % stress_table, consistency_level=ConsistencyLevel.THREE)
         initialData = cursor.execute(query)
+
+        peers1 = cursor.execute("select peer from system.peers")
+        peers2 = cursor2.execute("select peer from system.peers")
+
+        debug("initial peers")
+        debug(peers1)
+        debug(peers2)        
 
         #stop node, query should not work with consistency 3
         debug("Stopping node 3.")
@@ -68,7 +81,21 @@ class TestReplaceAddress(Tester):
         debug("Starting node 4 to replace node 3")
         node4 = Node('node4', cluster, True, ('127.0.0.4', 9160), ('127.0.0.4', 7000), '7400', '0', None, ('127.0.0.4',9042))
         cluster.add(node4, False)
-        node4.start(replace_address='127.0.0.3')
+        node4.start(replace_address='127.0.0.3', wait_other_notice=True)
+
+        cursor4 = self.patient_cql_connection(node4)
+        debug("peers after replace")
+        peers1 = cursor.execute("select peer from system.peers")
+        peers2 = cursor2.execute("select peer from system.peers")
+        peers4 = cursor4.execute("select peer from system.peers")
+
+        debug(peers1)
+        debug(peers2)
+        debug(peers4)
+
+        # assert_all(cursor, "select peer from system.peers", [['127.0.0.2'], ['127.0.0.4']])
+        # assert_all(cursor2, "select peer from system.peers", [['127.0.0.1'], ['127.0.0.4']])
+        # assert_all(cursor4, "select peer from system.peers", [['127.0.0.1'], ['127.0.0.2']])
 
         #query should work again
         debug("Verifying querying works again.")
@@ -88,6 +115,29 @@ class TestReplaceAddress(Tester):
         debug(checkCollision)
         self.assertEqual(len(checkCollision), 1)
 
+        cursor.execute("truncate system.peers")
+        node1.stop()
+        node1.start(wait_other_notice=True)
+        cursor2.execute("truncate system.peers")
+        node2.stop()
+        node2.start(wait_other_notice=True)
+        cursor4.execute("truncate system.peers")
+        node4.stop()
+        node4.start(wait_other_notice=True)
+
+        time.sleep(2)
+
+        peers1 = cursor.execute("select peer from system.peers")
+        peers2 = cursor2.execute("select peer from system.peers")
+        peers4 = cursor4.execute("select peer from system.peers")
+        debug("peers after truncate + restart")
+        debug(peers1)
+        debug(peers2)
+        debug(peers4)
+
+        # to trigger debug
+        assert 1==2
+
     def replace_active_node_test(self):
 
         debug("Starting cluster with 3 nodes.")
@@ -96,9 +146,12 @@ class TestReplaceAddress(Tester):
         [node1,node2, node3] = cluster.nodelist()
 
         debug("Inserting Data...")
-        node1.stress(['write', 'n=10000', '-schema', 'replication(factor=3)'])
+        if cluster.version() < "2.1":
+            node1.stress(['-o', 'insert', '--num-keys=10000', '--replication-factor=3'])
+        else:
+            node1.stress(['write', 'n=10000', '-schema', 'replication(factor=3)'])
         cursor = self.patient_cql_connection(node1)
-        stress_table = 'keyspace1.standard1'
+        stress_table = 'keyspace1.standard1' if self.cluster.version() >= '2.1' else '"Keyspace1"."Standard1"'
         query = SimpleStatement('select * from %s LIMIT 1' % stress_table, consistency_level=ConsistencyLevel.THREE)
         initialData = cursor.execute(query)
 
@@ -123,9 +176,12 @@ class TestReplaceAddress(Tester):
         [node1,node2, node3] = cluster.nodelist()
 
         debug("Inserting Data...")
-        node1.stress(['write', 'n=10000', '-schema', 'replication(factor=3)'])
+        if cluster.version() < "2.1":
+            node1.stress(['-o', 'insert', '--num-keys=10000', '--replication-factor=3'])
+        else:
+            node1.stress(['write', 'n=10000', '-schema', 'replication(factor=3)'])
         cursor = self.patient_cql_connection(node1)
-        stress_table = 'keyspace1.standard1'
+        stress_table = 'keyspace1.standard1' if self.cluster.version() >= '2.1' else '"Keyspace1"."Standard1"'
         query = SimpleStatement('select * from %s LIMIT 1' % stress_table, consistency_level=ConsistencyLevel.THREE)
         initialData = cursor.execute(query)
 
@@ -156,10 +212,13 @@ class TestReplaceAddress(Tester):
         debug(numNodes)
 
         debug("Inserting Data...")
-        node1.stress(['write', 'n=10000', '-schema', 'replication(factor=3)'])
+        if cluster.version() < "2.1":
+            node1.stress(['-o', 'insert', '--num-keys=10000', '--replication-factor=3'])
+        else:
+            node1.stress(['write', 'n=10000', '-schema', 'replication(factor=3)'])
 
         cursor = self.patient_cql_connection(node1)
-        stress_table = 'keyspace1.standard1'
+        stress_table = 'keyspace1.standard1' if self.cluster.version() >= '2.1' else '"Keyspace1"."Standard1"'
         query = SimpleStatement('select * from %s LIMIT 1' % stress_table, consistency_level=ConsistencyLevel.THREE)
         initialData = cursor.execute(query)
 
@@ -179,6 +238,14 @@ class TestReplaceAddress(Tester):
         node4 = Node('node4', cluster, True, ('127.0.0.4', 9160), ('127.0.0.4', 7000), '7400', '0', None, ('127.0.0.4',9042))
         cluster.add(node4, False)
         node4.start(jvm_args=["-Dcassandra.replace_address_first_boot=127.0.0.3"])
+
+        cursor2 = self.patient_cql_connection(node2)
+        cursor4 = self.patient_cql_connection(node4)
+
+
+        assert_all(cursor, "select peer from system.peers", [['127.0.0.2'], ['127.0.0.4']])
+        assert_all(cursor2, "select peer from system.peers", [['127.0.0.1'], ['127.0.0.4']])
+        assert_all(cursor4, "select peer from system.peers", [['127.0.0.1'], ['127.0.0.2']])
 
         #query should work again
         debug("Verifying querying works again.")
@@ -201,6 +268,10 @@ class TestReplaceAddress(Tester):
         node4.stop(gently=False)
         #node4.set_configuration_options(values={'num_tokens': 1})
         node4.start()
+
+        # assert_all(cursor, "select peer from system.peers", [['127.0.0.2'], ['127.0.0.4']])
+        # assert_all(cursor2, "select peer from system.peers", [['127.0.0.1'], ['127.0.0.4']])
+        # assert_all(cursor4, "select peer from system.peers", [['127.0.0.1'], ['127.0.0.2']])
 
         debug("Verifying querying works again.")
         finalData = cursor.execute(query)

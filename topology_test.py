@@ -1,6 +1,6 @@
 from dtest import Tester
 from pytools import insert_c1c2, query_c1c2, no_vnodes, new_node
-from pyassertions import assert_almost_equal
+from pyassertions import assert_almost_equal, assert_all
 
 import os, sys, time
 from ccmlib.cluster import Cluster
@@ -17,6 +17,9 @@ class TestTopology(Tester):
         [node1, node2, node3] = cluster.nodelist()
 
         cursor = self.patient_cql_connection(node1)
+        cursor2 = self.patient_cql_connection(node2)
+        cursor3 = self.patient_cql_connection(node3)
+
         self.create_ks(cursor, 'ks', 1)
         self.create_cf(cursor, 'cf', columns={'c1': 'text', 'c2': 'text'})
 
@@ -34,6 +37,10 @@ class TestTopology(Tester):
         time.sleep(1)
 
         cluster.cleanup()
+
+        assert_all(cursor, "select peer from system.peers", [["127.0.0.3"], ["127.0.0.2"]])
+        assert_all(cursor2, "select peer from system.peers", [["127.0.0.3"], ["127.0.0.1"]])
+        assert_all(cursor3, "select peer from system.peers", [["127.0.0.2"], ["127.0.0.1"]])
 
         # Check we can get all the keys
         for n in xrange(0, 10000):
@@ -71,6 +78,10 @@ class TestTopology(Tester):
         node4.stop()
         cluster.cleanup()
         time.sleep(.5)
+
+        assert_all(cursor, "select peer from system.peers", [["127.0.0.3"], ["127.0.0.2"]])
+        assert_all(cursor2, "select peer from system.peers", [["127.0.0.3"], ["127.0.0.1"]])
+        assert_all(cursor3, "select peer from system.peers", [["127.0.0.2"], ["127.0.0.1"]])           
 
         # Check we can get all the keys
         for n in xrange(0, 10000):
