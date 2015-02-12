@@ -373,6 +373,34 @@ class TestPagingWithModifiers(BasePagingTester, PageAssertionMixin):
             stmt = SimpleStatement("select * from paging_test where id in (1,2) order by value asc", consistency_level=CL.ALL)
             cursor.execute(stmt)
 
+
+    def test_with_reverse_order_by(self):
+        session = self.prepare()
+        node1 = self.cluster.nodelist()[0]
+
+        session.execute("CREATE KEYSPACE k WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1}")
+        session.execute("USE k")
+        session.execute("""CREATE TABLE events (
+                              buffer int,
+                              idkey int,
+                              id bigint,
+                              json text,
+                              type text,
+                              PRIMARY KEY ((buffer, idkey), id)
+                            ) WITH CLUSTERING ORDER BY (id DESC)""")
+
+        for i in xrange(2):
+            for j in xrange(2):
+                for k in xrange(5000):
+                    session.execute("INSERT INTO events (buffer, idkey, id, json, type) VALUES (%s, %s, %s, 'a', 'b')" % (i, j, k))
+
+        for i in xrange(2):
+            for j in xrange(2):
+                future = session.execute_async(SimpleStatement("SELECT buffer, id, type, json FROM events WHERE buffer = %s AND idkey = %s ORDER BY id ASC" % (i, j)))
+
+                pf = PageFetcher(future).request_all()
+                pf.all_data()
+
     @since('2.0')
     def test_with_limit(self):
         cursor = self.prepare()
