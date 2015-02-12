@@ -387,7 +387,9 @@ class TestPagingWithModifiers(BasePagingTester, PageAssertionMixin):
                               json text,
                               type text,
                               PRIMARY KEY ((buffer, idkey), id)
-                            ) WITH CLUSTERING ORDER BY (id DESC)""")
+                            ) WITH CLUSTERING ORDER BY (id DESC) AND
+                          compaction={'sstable_size_in_mb': '256', 'class': 'LeveledCompactionStrategy'} AND
+                          compression={'sstable_compression': 'LZ4Compressor'};""")
 
         for i in xrange(2):
             for j in xrange(2):
