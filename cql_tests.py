@@ -353,6 +353,7 @@ class TestCQL(Tester):
         cursor.execute("""INSERT INTO foo (a, b, c, d, e) VALUES (0, 0, 2, 0, 3);""")
         cursor.execute("""INSERT INTO foo (a, b, c, d, e) VALUES (0, -1, 2, 2, 2);""")
 
+    @require("7281")
     def tuple_query_mixed_order_columns_test(self):
         """CASSANDRA-7281: SELECT on tuple relations are broken for mixed ASC/DESC clustering order
 
@@ -364,6 +365,7 @@ class TestCQL(Tester):
         assert rows_to_list(res) == [[0, 2, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 2, -1],
                                      [0, 0, 1, 1, 1], [0, 0, 2, 1, -3], [0, 0, 2, 0, 3]], res
 
+    @require("7281")
     def tuple_query_mixed_order_columns_test2(self):
         """CASSANDRA-7281: SELECT on tuple relations are broken for mixed ASC/DESC clustering order
 
@@ -375,6 +377,7 @@ class TestCQL(Tester):
         assert rows_to_list(res) == [[0, 2, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 2, 1, -3],
                                      [0, 0, 2, 0, 3], [0, 0, 1, 2, -1], [0, 0, 1, 1, 1]], res
 
+    @require("7281")
     def tuple_query_mixed_order_columns_test3(self):
         """CASSANDRA-7281: SELECT on tuple relations are broken for mixed ASC/DESC clustering order
 
@@ -386,6 +389,7 @@ class TestCQL(Tester):
         assert rows_to_list(res) == [[0, 0, 2, 1, -3], [0, 0, 2, 0, 3], [0, 0, 1, 2, -1],
                                      [0, 0, 1, 1, 1], [0, 1, 0, 0, 0], [0, 2, 0, 0, 0]], res
 
+    @require("7281")
     def tuple_query_mixed_order_columns_test4(self):
         """CASSANDRA-7281: SELECT on tuple relations are broken for mixed ASC/DESC clustering order
 
@@ -397,6 +401,7 @@ class TestCQL(Tester):
         assert rows_to_list(res) == [[0, 2, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 1, 1],
                                      [0, 0, 1, 2, -1], [0, 0, 2, 0, 3], [0, 0, 2, 1, -3]], res
 
+    @require("7281")
     def tuple_query_mixed_order_columns_test5(self):
         """CASSANDRA-7281: SELECT on tuple relations are broken for mixed ASC/DESC clustering order
             Test that non mixed columns are still working.
@@ -408,6 +413,7 @@ class TestCQL(Tester):
         assert rows_to_list(res) == [[0, 2, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 2, 1, -3],
                                      [0, 0, 2, 0, 3], [0, 0, 1, 2, -1], [0, 0, 1, 1, 1]], res
 
+    @require("7281")
     def tuple_query_mixed_order_columns_test6(self):
         """CASSANDRA-7281: SELECT on tuple relations are broken for mixed ASC/DESC clustering order
             Test that non mixed columns are still working.
@@ -419,6 +425,7 @@ class TestCQL(Tester):
         assert rows_to_list(res) == [[0, 0, 1, 1, 1], [0, 0, 1, 2, -1], [0, 0, 2, 0, 3],
                                       [0, 0, 2, 1, -3], [0, 1, 0, 0, 0], [0, 2, 0, 0, 0]], res
 
+    @require("7281")
     def tuple_query_mixed_order_columns_test7(self):
         """CASSANDRA-7281: SELECT on tuple relations are broken for mixed ASC/DESC clustering order
         """
@@ -429,6 +436,7 @@ class TestCQL(Tester):
         assert rows_to_list(res) == [[0, 0, 0, 0, 0], [0, 0, 1, 1, -1], [0, 0, 1, 1, 0],
                                      [0, 0, 1, 0, 2], [0, -1, 2, 2, 2]], res
 
+    @require("7281")
     def tuple_query_mixed_order_columns_test8(self):
         """CASSANDRA-7281: SELECT on tuple relations are broken for mixed ASC/DESC clustering order
         """
@@ -439,6 +447,7 @@ class TestCQL(Tester):
         assert rows_to_list(res) == [[0, -1, 2, 2, 2], [0, 0, 1, 1, -1], [0, 0, 1, 1, 0],
                                      [0, 0, 1, 0, 2], [0, 0, 0, 0, 0]], res
 
+    @require("7281")
     def tuple_query_mixed_order_columns_test9(self):
         """CASSANDRA-7281: SELECT on tuple relations are broken for mixed ASC/DESC clustering order
         """
@@ -3353,6 +3362,27 @@ class TestCQL(Tester):
         assert_invalid(cursor, 'SELECT DISTINCT pk0 FROM regular', matching="queries must request all the partition key columns")
         assert_invalid(cursor, 'SELECT DISTINCT pk0, pk1, ck0 FROM regular', matching="queries must only request partition key columns")
 
+    def select_distinct_with_deletions_test(self):
+        cursor = self.prepare()
+        cursor.execute('CREATE TABLE t1 (k int PRIMARY KEY, c int, v int)')
+        for i in range(10):
+            cursor.execute('INSERT INTO t1 (k, c, v) VALUES (%d, %d, %d)' % (i, i, i))
+
+        rows = cursor.execute('SELECT DISTINCT k FROM t1')
+        self.assertEqual(10, len(rows))
+        key_to_delete = rows[3].k
+
+        cursor.execute('DELETE FROM t1 WHERE k=%d' % (key_to_delete,))
+        rows = list(cursor.execute('SELECT DISTINCT k FROM t1'))
+        self.assertEqual(9, len(rows))
+
+        rows = list(cursor.execute('SELECT DISTINCT k FROM t1 LIMIT 5'))
+        self.assertEqual(5, len(rows))
+
+        cursor.default_fetch_size = 5
+        rows = list(cursor.execute('SELECT DISTINCT k FROM t1'))
+        self.assertEqual(9, len(rows))
+
     def function_with_null_test(self):
         cursor = self.prepare()
 
@@ -5116,3 +5146,27 @@ class TestCQL(Tester):
         node1.nodetool('flush')
 
         assert_none(session, "select * from space1.table1 where a=1 and b=1")
+
+    def bug_5732_test(self):
+        cursor = self.prepare(use_cache=True)
+
+        cursor.execute("""
+            CREATE TABLE test (
+                k int PRIMARY KEY,
+                v int,
+            )
+        """)
+
+        cursor.execute("ALTER TABLE test WITH CACHING='ALL'")
+        cursor.execute("INSERT INTO test (k,v) VALUES (0,0)")
+        cursor.execute("INSERT INTO test (k,v) VALUES (1,1)")
+        cursor.execute("CREATE INDEX on test(v)")
+        assert_all(cursor, "SELECT k FROM test WHERE v = 0", [[0]])
+
+        self.cluster.stop()
+        time.sleep(0.5)
+        self.cluster.start()
+        time.sleep(0.5)
+
+        cursor = self.patient_cql_connection(self.cluster.nodelist()[0])
+        assert_all(cursor, "SELECT k FROM ks.test WHERE v = 0", [[0]])
