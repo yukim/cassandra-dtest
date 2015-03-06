@@ -202,18 +202,6 @@ class TestGlobalIndexes(Tester):
         result = cursor.execute("SELECT * FROM system.schema_globalindexes WHERE keyspace_name='ks' AND columnfamily_name='users'")
         assert len(result) == 1, "Expecting 1 global index, got" + str(result)
 
-
-    @since('3.0')
-    def test_index_insert(self):
-        cursor = self.carl_prepare()
-
-        # insert data
-        cursor.execute("INSERT INTO users (KEY, password, gender, state, birth_year) VALUES ('user1', 'ch@ngem3a', 'f', 'TX', 1968);")
-        cursor.execute("INSERT INTO users (KEY, password, gender, state, birth_year) VALUES ('user2', 'ch@ngem3b', 'm', 'CA', 1971);")
-        cursor.execute("INSERT INTO users (KEY, password, gender, state, birth_year) VALUES ('user3', 'ch@ngem3c', 'f', 'FL', 1978);")
-        cursor.execute("INSERT INTO users (KEY, password, gender, state, birth_year) VALUES ('user4', 'ch@ngem3d', 'm', 'TX', 1974);")
-
-
     @since('3.0')
     def test_index_query(self):
         cursor = self.carl_prepare()
