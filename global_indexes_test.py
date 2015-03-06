@@ -1,6 +1,6 @@
 import random, re, time, uuid
 from dtest import Tester, debug
-from tools import since, require
+from tools import since
 from assertions import assert_one, assert_invalid, assert_none
 from cassandra import InvalidRequest, ConsistencyLevel
 from cassandra.query import BatchStatement, SimpleStatement
@@ -196,7 +196,6 @@ class TestGlobalIndexes(Tester):
             assert_one(session, "SELECT * FROM t WHERE v = %d" % i, [i, i])
 
     @since('3.0')
-    @require('6477')
     def test_create_index(self):
         cursor = self.carl_prepare()
 
@@ -205,7 +204,6 @@ class TestGlobalIndexes(Tester):
 
 
     @since('3.0')
-    @require('6477')
     def test_index_insert(self):
         cursor = self.carl_prepare()
 
@@ -217,7 +215,6 @@ class TestGlobalIndexes(Tester):
 
 
     @since('3.0')
-    @require('6477')
     def test_index_query(self):
         cursor = self.carl_prepare()
 
@@ -238,7 +235,6 @@ class TestGlobalIndexes(Tester):
 
 
     @since('3.0')
-    @require('6477')
     def test_index_prepared_statement(self):
         cursor = self.carl_prepare()
 
@@ -261,7 +257,6 @@ class TestGlobalIndexes(Tester):
         assert len(result) == 0, "Expecting 0 users, got" + str(result)
 
     @since('3.0')
-    @require('6477')
     def test_drop_index(self):
         cursor = self.carl_prepare()
 
@@ -274,7 +269,6 @@ class TestGlobalIndexes(Tester):
         assert len(result) == 0, "Expecting 0 global indexes, got" + str(result)
 
     @since('3.0')
-    @require('6477')
     def test_drop_indexed_column(self):
         cursor = self.carl_prepare()
 
@@ -282,7 +276,6 @@ class TestGlobalIndexes(Tester):
         assert_invalid(cursor, "ALTER TABLE ks.users ALTER state TYPE blob")
 
     @since('3.0')
-    @require('6477')
     def test_double_indexing_column(self):
         cursor = self.carl_prepare()
 
@@ -293,7 +286,6 @@ class TestGlobalIndexes(Tester):
         assert_invalid(cursor, "CREATE GLOBAL INDEX ON ks.users (gender) DENORMALIZED (birth_year)")
 
     @since('3.0')
-    @require('6477')
     def test_drop_indexed_table(self):
         cursor = self.carl_prepare()
 
