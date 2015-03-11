@@ -1684,7 +1684,10 @@ class TestCQL(Tester):
         assert rows_to_list(res) == [[0, 1, 1, 1], [0, 3, 3, 3]], res
 
         assert_invalid(cursor, "SELECT * FROM test WHERE k2 = 3")
-        assert_invalid(cursor, "SELECT * FROM test WHERE k1 IN (0, 1) and k2 = 3")
+
+        v = self.cluster.version()
+        if v < "3.0.0":
+            assert_invalid(cursor, "SELECT * FROM test WHERE k1 IN (0, 1) and k2 = 3")
 
         res = cursor.execute("SELECT * FROM test WHERE token(k1, k2) = token(0, 1)")
         assert rows_to_list(res) == [[0, 1, 1, 1]], res
@@ -1856,22 +1859,38 @@ class TestCQL(Tester):
         res = cursor.execute("SELECT blog_id, content FROM blogs WHERE author='foo'")
         assert rows_to_list(res) == [[1, 'bar1'], [1, 'bar2'], [2, 'baz']], res
 
-        res = cursor.execute("SELECT blog_id, content FROM blogs WHERE time1 > 0 AND author='foo'")
+        res = cursor.execute("SELECT blog_id, content FROM blogs WHERE time1 > 0 AND author='foo' ALLOW FILTERING")
         assert rows_to_list(res) == [[2, 'baz']], res
 
-        res = cursor.execute("SELECT blog_id, content FROM blogs WHERE time1 = 1 AND author='foo'")
+        res = cursor.execute("SELECT blog_id, content FROM blogs WHERE time1 = 1 AND author='foo' ALLOW FILTERING")
         assert rows_to_list(res) == [[2, 'baz']], res
 
-        res = cursor.execute("SELECT blog_id, content FROM blogs WHERE time1 = 1 AND time2 = 0 AND author='foo'")
+        res = cursor.execute("SELECT blog_id, content FROM blogs WHERE time1 = 1 AND time2 = 0 AND author='foo' ALLOW FILTERING")
         assert rows_to_list(res) == [[2, 'baz']], res
 
-        res = cursor.execute("SELECT content FROM blogs WHERE time1 = 1 AND time2 = 1 AND author='foo'")
+        res = cursor.execute("SELECT content FROM blogs WHERE time1 = 1 AND time2 = 1 AND author='foo' ALLOW FILTERING")
         assert rows_to_list(res) == [], res
 
-        res = cursor.execute("SELECT content FROM blogs WHERE time1 = 1 AND time2 > 0 AND author='foo'")
+        res = cursor.execute("SELECT content FROM blogs WHERE time1 = 1 AND time2 > 0 AND author='foo' ALLOW FILTERING")
         assert rows_to_list(res) == [], res
 
         assert_invalid(cursor, "SELECT content FROM blogs WHERE time2 >= 0 AND author='foo'")
+
+        # as discussed in CASSANDRA-8148, some queries that should have required ALLOW FILTERING
+        # in 2.0 have been fixed for 3.0
+        v = self.cluster.version()
+        if v < "3.0.0":
+            cursor.execute("SELECT blog_id, content FROM blogs WHERE time1 > 0 AND author='foo'")
+            cursor.execute("SELECT blog_id, content FROM blogs WHERE time1 = 1 AND author='foo'")
+            cursor.execute("SELECT blog_id, content FROM blogs WHERE time1 = 1 AND time2 = 0 AND author='foo'")
+            cursor.execute("SELECT content FROM blogs WHERE time1 = 1 AND time2 = 1 AND author='foo'")
+            cursor.execute("SELECT content FROM blogs WHERE time1 = 1 AND time2 > 0 AND author='foo'")
+        else:
+            assert_invalid(cursor, "SELECT blog_id, content FROM blogs WHERE time1 > 0 AND author='foo'")
+            assert_invalid(cursor, "SELECT blog_id, content FROM blogs WHERE time1 = 1 AND author='foo'")
+            assert_invalid(cursor, "SELECT blog_id, content FROM blogs WHERE time1 = 1 AND time2 = 0 AND author='foo'")
+            assert_invalid(cursor, "SELECT content FROM blogs WHERE time1 = 1 AND time2 = 1 AND author='foo'")
+            assert_invalid(cursor, "SELECT content FROM blogs WHERE time1 = 1 AND time2 > 0 AND author='foo'")
 
     @freshCluster()
     def limit_bugs_test(self):
