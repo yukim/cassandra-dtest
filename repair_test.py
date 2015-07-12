@@ -227,6 +227,7 @@ class TestRepair(Tester):
         out_of_sync_logs = node2.grep_log("/([0-9.]+) and /([0-9.]+) have ([0-9]+) range\(s\) out of sync for cf2")
         self.assertGreater(len(out_of_sync_logs), 0, "Non GC-able data should be repaired")
 
+    @since('2.2')
     def local_dc_repair_test(self):
         cluster = self._setup_multi_dc()
         node1 = cluster.nodes["node1"]
@@ -249,6 +250,7 @@ class TestRepair(Tester):
         # Check node2 now has the key
         self.check_rows_on_node(node2, 2001, found=[1000], restart=False)
 
+    @since('2.2')
     def dc_repair_test(self):
         cluster = self._setup_multi_dc()
         node1 = cluster.nodes["node1"]
