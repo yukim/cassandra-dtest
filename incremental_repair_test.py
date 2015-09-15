@@ -9,7 +9,7 @@ from nose.plugins.attrib import attr
 from assertions import assert_almost_equal, assert_one
 from ccmlib.node import Node
 from dtest import Tester, debug
-from tools import insert_c1c2, since
+from tools import insert_c1c2, since, require
 
 
 @since('2.1')
@@ -22,6 +22,26 @@ class TestIncRepair(Tester):
             r'Can\'t send migration request: node.*is down',
         ]
         Tester.__init__(self, *args, **kwargs)
+
+    @require(10288)
+    def error_when_not_enough_replica_test(self):
+        """
+        Test to ensure nodetool repair not hang (CASSANDRA-10288)
+        """
+        cluster = self.cluster
+        cluster.populate(3).start()
+        node1, node2, node3 = cluster.nodelist()
+
+        node3.stop(gently=True)
+
+        node1.stress(['write', 'n=10000', '-schema', 'replication(factor=3)'])
+        node1.flush()
+        node2.flush()
+
+        if cluster.version() >= "2.2":
+            node1.repair()
+        else:
+            node1.nodetool("repair -par -inc")
 
     def sstable_marking_test(self):
         cluster = self.cluster
