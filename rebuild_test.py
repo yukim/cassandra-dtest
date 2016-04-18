@@ -159,7 +159,7 @@ class TestRebuild(Tester):
         session.execute('USE ks1')
 
         # rebuild only ks1 with range that is node1's replica
-        node2.nodetool('rebuild -ks ks1 -ts (%s,%s] dc1' % (tokens[1], str(pow(2,63)-1)))
+        node2.nodetool('rebuild -ks ks1 -ts (%s,%s] dc1' % (tokens[1], str(pow(2, 63) - 1)))
 
         # check data is sent by stopping node1
         node1.stop()
