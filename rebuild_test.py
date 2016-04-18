@@ -108,7 +108,7 @@ class TestRebuild(Tester):
 
     def rebuild_ranges_test(self):
         """
-        @jira_ticket CASSANDRA-10409
+        @jira_ticket CASSANDRA-10406
         """
         keys = 1000
 
